@@ -33,14 +33,19 @@ for file in dirs:
     #Test Output -------------------------------------------------------------------------------------------------------
     #print(tsContent)                                                        #Prints PDF Content
     print(lb)                                                               #Prints Line Break
+    if productSku and productDesc and productHeight and productWidth and productDepth:
+        print(productSku.group() + '\n' + cleanProductDesc[0] + '\n' + lb       #Prints First Block: SKU, Description
+            + '\n' + productHeight.group(1) + '\n' + productWidth.group(1)    #Prints Second Block: Height/Width/Depth
+            + '\n' + productDepth.group(1) + '\n' + productWeight.group(1))   #Weight
+    else:
+        print('0')
 
-    print(productSku.group() + '\n' + cleanProductDesc[0] + '\n' + lb       #Prints First Block: SKU, Description
-          + '\n' + productHeight.group(1) + '\n' + productWidth.group(1)    #Prints Second Block: Height/Width/Depth
-          + '\n' + productDepth.group(1) + '\n' + productWeight.group(1))   #Weight
     print(lb)                                                               #Prints Line Break
 
     print(productHeight.group(2) + '\n' + productWidth.group(2) + '\n'      #Prints Third Block: Box Height/Width/Depth
-          + productDepth.group(2) + '\n' + productWeight.group(2))          #Weight
+        + productDepth.group(2) + '\n' + productWeight.group(2))          #Weight
+
+
     print(lb)                                                               #Prints Line Break
 
     if productPrice:
