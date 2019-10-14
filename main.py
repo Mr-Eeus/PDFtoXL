@@ -6,14 +6,14 @@ import re
                         #Cycle through each file in Tablet Scan Subfolder (PDF Versions Only)
 
 #Global Variables / PDF Parser & Test Output
-tabletScanPath = "Z:/!USERS/Sean/Tablet-Test"                                       #Where to pull Tablet Scans from
+tabletScanPath = "C:\\Users\Carol\Desktop\\New Uploads\\"                                       #Where to pull Tablet Scans from
 dirs = os.listdir(tabletScanPath)
-saveLocation = "C:\\Users\Carol\Desktop\\New_Product_List.xlsx"                     #Where to save the Spreadsheet
+saveLocation = "C:\\Users\Carol\Desktop\\New Upload Products.xlsx"                     #Where to save the Spreadsheet
 lb = "------------------------------------------------------------------------------------------------------------------"
 
 #Global Variables / Spreadsheet
 wb = Workbook()
-destination_spreadsheet = 'New_Product_List.xlsx'
+destination_spreadsheet = 'New Upload Products.xlsx'
 ws = wb.active
 ws.title = "Product Data"
 ws['A1'] = "SKU"                                                                    #Category Header, SKU
@@ -34,13 +34,13 @@ rowVal = 2
 
 for file in dirs:
                 #------- Within this block, any code is applied to each file in Test Folder --------
-    pdfContent = parser.from_file("Z:/!USERS/Sean/Tablet-Test/" + file)             #Parses PDF document
+    pdfContent = parser.from_file(tabletScanPath + file)             #Parses PDF document
     tsContent = (pdfContent['content'])                                             #Returns only the CONTENT of the PDF
 
     #------------------------------------------------ REGEX Searches ---------------------------------------------------
-    productSku = re.search(r'(CD..[0-9][0-9][0-9][0-9])', tsContent)                #Matches any product that matches CDXX####
-    if productSku == None:
-        productSku = re.search(r'(CD..[0-9][0-9][0-9][0-9])\w*', tsContent)         #Matches any product that matches CDXX########
+    productSku = re.search(r'(CD..[0-9]+).*', file)                #Matches any product that matches CDXX####
+    #if productSku == None:
+        #productSku = re.search(r'(CD..[0-9]+).*', tsContent)         #Matches any product that matches CDXX########
 
     productHeight = re.search(r'H\s([0-9]+)\s([0-9]+)', tsContent)                  #Group 1 = Product Size, Group 2 = Box Size
     if productHeight == None:                                                           #Error Loop, If No Box Size Found
@@ -62,14 +62,14 @@ for file in dirs:
             if productWeight == None:
                 productWeight = "--"
 
-    productDesc = re.search(r'ITEM\s#\n(\n[\w+\s]+)', tsContent)                        #Find Product Description on Tablet Scan
+    productDesc = re.search(r'ITEM #\n(\n[\w\W+\s]+)(CD..)', tsContent)                        #Find Product Description on Tablet Scan
 
     productPrice = re.search(r'TOTAL:\s([0-9]+.[0-9][0-9])\$*\s*', tsContent)           #Find Product Total Price on Tablet Scan
 
 
     #--------------------------------------------- REGEX Search Cleaning -----------------------------------------------
     try:
-        cleanProductDesc = productDesc.group().split(productSku.group())            #Cut String off when SKU is found in string
+        cleanProductDesc = productDesc.group(1).split(productSku.group())            #Cut String off when SKU is found in string
         cleanProductDesc[0] = cleanProductDesc[0].lstrip("ITEM #")                      #Remove 'ITEM #' from start of string
         cleanProductDesc[0] = cleanProductDesc[0].strip('\n')                           #Remove any '\n'  from string
         cleanProductDesc[0] = cleanProductDesc[0].replace('\n', "")                     #Remove any '\n' from center of string
@@ -79,39 +79,52 @@ for file in dirs:
         cleanProductDesc = "No Product Description"
 
     #---------------------------------------------- XL Sheet Functions -------------------------------------------------
-    if productSku:
-        ws['A' + rowVal.__str__()] = productSku.group(0)        #Store all Found SKUS in New Spreadsheet, col A
+    #if productSku:
+    ws['A' + rowVal.__str__()] = productSku.group(1)        #Store all Found SKUS in New Spreadsheet, col A
+    #ws['A' + rowVal.__str__()] = file        #Store all Found SKUS in New Spreadsheet, col A
 
     try:
         ws['B' + rowVal.__str__()] = cleanProductDesc[0]        #Store Descriptions.. Col B
     except AttributeError:
-        ws['B' + rowVal.__str__()] = cleanProductDesc           #If no description, store no description, Col B
+        ws['B' + rowVal.__str__()] = "No Product Description"           #If no description, store no description, Col B
+    except IndexError:
+        ws['B' + rowVal.__str__()] = "No Product Description"  # If no description, store no description, Col B
 
     if productHeight:
         ws['C' + rowVal.__str__()] = productHeight.group(1)     #Store Product Height.. Col C
 
     if productWeight:
-        ws['D' + rowVal.__str__()] = productWidth.group(1)      #Store Product Width.. Col D
-
+        try:
+            ws['D' + rowVal.__str__()] = productWidth.group(1)      #Store Product Width.. Col D
+        except AttributeError:
+            ws['D' + rowVal.__str__()] = "--"
     if productDepth:
         ws['E' + rowVal.__str__()] = productDepth.group(1)      #Store Product Depth.. Col E
 
     if productWeight:
-        ws['F' + rowVal.__str__()] = productWeight.group(1)     #Store Product Weight.. Col F
-
+        try:
+            ws['F' + rowVal.__str__()] = productWeight.group(1)     #Store Product Weight.. Col F
+        except AttributeError:
+            ws['F' + rowVal.__str__()] = "--"
     try:
         ws['G' + rowVal.__str__()] = productHeight.group(2)     #Store Boxed Height.. Col G
     except IndexError:
         ws['G' + rowVal.__str__()] = "--"                       #If no Boxed Height, Insert '--'
+    except AttributeError:
+        ws['G' + rowVal.__str__()] = "--"
 
     try:
         ws['H' + rowVal.__str__()] = productWidth.group(2)      #Store Boxed Width.. Col H
     except IndexError:
         ws['H' + rowVal.__str__()] = "--"                       #If no Boxed Width, Insert '--'
+    except AttributeError:
+        ws['H' + rowVal.__str__()] = "--"
 
     try:
         ws['I' + rowVal.__str__()] = productDepth.group(2)      #Store Boxed Depth.. Col I
     except IndexError:
+        ws['I' + rowVal.__str__()] = "--"
+    except AttributeError:
         ws['I' + rowVal.__str__()] = "--"
 
     try:
@@ -124,18 +137,32 @@ for file in dirs:
     if productPrice:
         ws['K' + rowVal.__str__()] = productPrice.group(1)      #Store Produt Price.. Col K
     else:
-        productPrice = re.search(r'\n([0-9]+.[0-9]+)\$\s*\n\nI', tsContent)
-        ws['K' + rowVal.__str__()] = productPrice.group(1)      #If Product Price Regex Search Fails,
-                                                                #Try new search, add to Price.. Col K
+        try:
+            productPrice = re.search(r'\n([0-9]+.[0-9]+)\$\s*\n\nI', tsContent)
+            ws['K' + rowVal.__str__()] = productPrice.group(1)      #If Product Price Regex Search Fails,
+        except AttributeError:
+            try:
+                productPrice = re.search(r'TOTAL: (\$[0-9]+.[0-9]+)', tsContent)
+                ws['K' + rowVal.__str__()] = productPrice.group(1)
+            except AttributeError:
+                ws['K' + rowVal.__str__()] = "--"
+
+    wholesalePrice = float(productPrice.group(1).lstrip("$"))
+    wholesalePrice = wholesalePrice * 3
+    ws['L' + rowVal.__str__()] = wholesalePrice
+
+    msrp = wholesalePrice / 2
+    ws['M' + rowVal.__str__()] = msrp
 
     rowVal += 1
 
     #--------------------------------------------------- Test Output ---------------------------------------------------
+    '''
     print(tsContent)
     print(lb)
     if productSku:
-        print(productSku.group(0))
-
+        #print(productSku.group(0))
+        print(file)
     try:
         print(cleanProductDesc[0])
     except AttributeError:
@@ -190,7 +217,7 @@ for file in dirs:
         print(productPrice.group(1))
 
     print(lb + '\n\n\n' )
-
+    '''
 wb.save(saveLocation)                                                               #Save Workbook
 
-print('Document saved to previously defined Location.')                              #Print Success Message
+print('Document saved to previously defined Desktop.')                              #Print Success Message
