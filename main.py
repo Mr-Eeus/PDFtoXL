@@ -6,14 +6,14 @@ import re
                         #Cycle through each file in Tablet Scan Subfolder (PDF Versions Only)
 
 #Global Variables / PDF Parser & Test Output
-tabletScanPath = "C:\\Users\Carol\Desktop\\New Uploads\\"                                       #Where to pull Tablet Scans from
+tabletScanPath = "C:\\Users\Carol\Desktop\XL Sample Sheets\\"                                       #Where to pull Tablet Scans from
 dirs = os.listdir(tabletScanPath)
-saveLocation = "C:\\Users\Carol\Desktop\\New Upload Products.xlsx"                     #Where to save the Spreadsheet
+saveLocation = "C:\\Users\Carol\Desktop\\New Product List.xlsx"                     #Where to save the Spreadsheet
 lb = "------------------------------------------------------------------------------------------------------------------"
 
 #Global Variables / Spreadsheet
 wb = Workbook()
-destination_spreadsheet = 'New Upload Products.xlsx'
+destination_spreadsheet = 'New Product List.xlsx'
 ws = wb.active
 ws.title = "Product Data"
 ws['A1'] = "SKU"                                                                    #Category Header, SKU
@@ -27,8 +27,8 @@ ws['H1'] = "Boxed Width"                                                        
 ws['I1'] = "Boxed Depth"                                                            #Category Header, Boxed Product Depth
 ws['J1'] = "Boxed Weight"                                                           #Category Header, Boxed Product Weight
 ws['K1'] = "Internet Price"                                                         #Category Header, Product Price
-ws['L1'] = "Wholesale Price"                                                        #Category Header, Wholesale Price
-ws['M1'] = "MSRP"                                                                   #Category Header, MSRP
+ws['L1'] = "MSRP"                                                                   #Category Header, Wholesale Price
+ws['M1'] = "Wholesale Price"                                                        #Category Header, MSRP
 
 rowVal = 2
 
@@ -42,37 +42,67 @@ for file in dirs:
     #if productSku == None:
         #productSku = re.search(r'(CD..[0-9]+).*', tsContent)         #Matches any product that matches CDXX########
 
-    productHeight = re.search(r'H\s([0-9]+)\s([0-9]+)', tsContent)                  #Group 1 = Product Size, Group 2 = Box Size
-    if productHeight == None:                                                           #Error Loop, If No Box Size Found
-        productHeight = re.search(r'H\s([0-9]+)', tsContent)
+    productDims = re.search(r'BOX SIZE\n\nH\s([0-9]*\.*[0-9]*)\"*i*n*\s*([0-9]*\.*[0-9]*)\"*i*n*\n\nW\s([0-9]*\.*[0-9]*)\"*i*n*\s*([0-9]*\.*[0-9]*)\"*i*n*\n\nD\s([0-9]\.*[0-9]*)\"*i*n*\s*([0-9]*)\"*i*n*', tsContent)                  #Group 1 = Product Size, Group 2 = Box Size
+    try:
+        productHeight = productDims.group(1)
+    except AttributeError:
+        '''try:
+            productDims = re.search(r'BOX SIZE\n\nH\s([0-9]*).*\s*([0-9]*)\n\nW\s([0-9]*).\d*\s*([0-9]*)\n\nD\s([0-9]*).*\s([0-9]*)\n', tsContent)
+            productHeight = productDims.group(1)
+        except AttributeError:
+            try:
+                productDims = re.search(r'BOX SIZE\n\nH\s([0-9]*).*\s*([0-9]*)\n\nW\s([0-9]*).\d*\s*([0-9]*)\n\nD\s([0-9]*).*\s([0-9]*)', tsContent)
+                productHeight = productDims.group(1)
+            except AttributeError:'''
+        productHeight = "--"
 
-    productWidth = re.search(r'W\s([0-9]+)\s([0-9]+)', tsContent)                   #Group 1 = Product Size, Group 2 = Box Size
+    if productHeight == None:                                                          #Error Loop, If No Box Size Found
+        productHeight = "--"
+        #re.search(r'H\s([0-9]+)', tsContent)
+
+    try:
+        productWidth = productDims.group(3)                   #Group 1 = Product Size, Group 2 = Box Size
+    except AttributeError:
+        try:
+            productDims = re.search(r'BOX SIZE\n\nH\s([0-9]*\.*[0-9]*)\"*i*n*\s*([0-9]*\.*[0-9]*)\"*i*n*\n\nW\s([0-9]*\.*[0-9]*)\"*i*n*\s*([0-9]*\.*[0-9]*)\"*i*n*\n\nD\s([0-9]\.*[0-9]*)\"*i*n*\s*([0-9]*)\"*i*n*', tsContent)
+            productWidth = productDims.group(3)
+        except AttributeError:
+            productWidth = "--"
+
     if productWidth == None:                                                            #Error Loop, If No Box Size Found
-        productWidth = re.search(r'W\s([0-9]+)', tsContent)
+        productWidth = "--"
+        #re.search(r'W\s([0-9]+)', tsContent)
 
-    productDepth = re.search(r'D\s([0-9]+)\s([0-9]+)', tsContent)                   #Group 1 = Product Size, Group 2 = Box Size
+    try:
+        productDepth = productDims.group(5)                   #Group 1 = Product Size, Group 2 = Box Size
+    except AttributeError:
+        productDepth = "--"
+
     if productDepth == None:                                                            #Error Loop, If No Box Size Found
-        productDepth = re.search(r'D\s([0-9]+)', tsContent)
+        productDepth = "--"
+        #re.search(r'D\s([0-9]+)', tsContent)
 
-    productWeight = re.search(r'LBS\s([0-9]+.[0-9]\s)([0-9]+)', tsContent)          #Group 1 = Product Weight, Group 2 = Box Weight
+    productWeight = re.search(r'LBS\s([0-9]+\.*[0-9]*\s)([0-9]+\.*[0-9]*)', tsContent)          #Group 1 = Product Weight, Group 2 = Box Weight
     if productWeight == None:
-        productWeight = re.search('LBS\s([0-9]+)\s([0-9])', tsContent)                  #Error Loop 1/2, if NO DECIMAL in weight.
+        productWeight = re.search('LBS\s([0-9]+\.*[0-9]*\s)', tsContent)                  #Error Loop 1/2, if NO DECIMAL in weight.
         if productWeight == None:
-            productWeight = re.search('LBS\s([0-9]+)', tsContent)                       #Error Loop 2/2, if NO Box Weight
+            productWeight = re.search('LBS\s([0-9]+\.*[0-9]*\s)', tsContent)                       #Error Loop 2/2, if NO Box Weight
             if productWeight == None:
                 productWeight = "--"
 
     productDesc = re.search(r'ITEM #\n(\n[\w\W+\s]+)(CD..)', tsContent)                        #Find Product Description on Tablet Scan
+    if productDesc == None:
+        productDesc = re.search(r'DESCRIPTION:\s...\n\n([\w\W+\s]+)\n[\d+]+', tsContent)
 
     productPrice = re.search(r'TOTAL:\s([0-9]+.[0-9][0-9])\$*\s*', tsContent)           #Find Product Total Price on Tablet Scan
 
 
     #--------------------------------------------- REGEX Search Cleaning -----------------------------------------------
     try:
-        cleanProductDesc = productDesc.group(1).split(productSku.group())            #Cut String off when SKU is found in string
-        cleanProductDesc[0] = cleanProductDesc[0].lstrip("ITEM #")                      #Remove 'ITEM #' from start of string
-        cleanProductDesc[0] = cleanProductDesc[0].strip('\n')                           #Remove any '\n'  from string
-        cleanProductDesc[0] = cleanProductDesc[0].replace('\n', "")                     #Remove any '\n' from center of string
+        cleanProductDesc = productDesc.group(1) #.split(productSku.group())            #Cut String off when SKU is found in string
+        cleanProductDesc = cleanProductDesc.lstrip("ITEM #")                      #Remove 'ITEM #' from start of string
+        cleanProductDesc = cleanProductDesc.strip('\n')                           #Remove any '\n'  from string
+        cleanProductDesc = cleanProductDesc.replace('\n', "")                     #Remove any '\n' from center of string
     except AttributeError:
         cleanProductDesc = "No Product Description"                                 #Print if Regex search fails to find description
     except:
@@ -84,22 +114,24 @@ for file in dirs:
     #ws['A' + rowVal.__str__()] = file        #Store all Found SKUS in New Spreadsheet, col A
 
     try:
-        ws['B' + rowVal.__str__()] = cleanProductDesc[0]        #Store Descriptions.. Col B
+        ws['B' + rowVal.__str__()] = cleanProductDesc        #Store Descriptions.. Col B
     except AttributeError:
         ws['B' + rowVal.__str__()] = "No Product Description"           #If no description, store no description, Col B
     except IndexError:
         ws['B' + rowVal.__str__()] = "No Product Description"  # If no description, store no description, Col B
+    except TypeError:
+        ws['B' + rowVal.__str__()] = "No Product Description"
 
     if productHeight:
-        ws['C' + rowVal.__str__()] = productHeight.group(1)     #Store Product Height.. Col C
+        ws['C' + rowVal.__str__()] = productHeight     #Store Product Height.. Col C
 
-    if productWeight:
+    if productWidth:
         try:
-            ws['D' + rowVal.__str__()] = productWidth.group(1)      #Store Product Width.. Col D
+            ws['D' + rowVal.__str__()] = productWidth      #Store Product Width.. Col D
         except AttributeError:
             ws['D' + rowVal.__str__()] = "--"
     if productDepth:
-        ws['E' + rowVal.__str__()] = productDepth.group(1)      #Store Product Depth.. Col E
+        ws['E' + rowVal.__str__()] = productDepth      #Store Product Depth.. Col E
 
     if productWeight:
         try:
@@ -107,21 +139,21 @@ for file in dirs:
         except AttributeError:
             ws['F' + rowVal.__str__()] = "--"
     try:
-        ws['G' + rowVal.__str__()] = productHeight.group(2)     #Store Boxed Height.. Col G
+        ws['G' + rowVal.__str__()] = productDims.group(2)     #Store Boxed Height.. Col G
     except IndexError:
         ws['G' + rowVal.__str__()] = "--"                       #If no Boxed Height, Insert '--'
     except AttributeError:
         ws['G' + rowVal.__str__()] = "--"
 
     try:
-        ws['H' + rowVal.__str__()] = productWidth.group(2)      #Store Boxed Width.. Col H
+        ws['H' + rowVal.__str__()] = productDims.group(4)      #Store Boxed Width.. Col H
     except IndexError:
         ws['H' + rowVal.__str__()] = "--"                       #If no Boxed Width, Insert '--'
     except AttributeError:
         ws['H' + rowVal.__str__()] = "--"
 
     try:
-        ws['I' + rowVal.__str__()] = productDepth.group(2)      #Store Boxed Depth.. Col I
+        ws['I' + rowVal.__str__()] = productDims.group(6)      #Store Boxed Depth.. Col I
     except IndexError:
         ws['I' + rowVal.__str__()] = "--"
     except AttributeError:
@@ -136,27 +168,54 @@ for file in dirs:
 
     if productPrice:
         ws['K' + rowVal.__str__()] = productPrice.group(1)      #Store Produt Price.. Col K
+        msrp = float(productPrice.group(1).lstrip("$"))
+        msrp = msrp * 3
+        ws['L' + rowVal.__str__()] = msrp
+
+        wholesalePrice = msrp / 2
+        ws['M' + rowVal.__str__()] = wholesalePrice
     else:
         try:
             productPrice = re.search(r'\n([0-9]+.[0-9]+)\$\s*\n\nI', tsContent)
             ws['K' + rowVal.__str__()] = productPrice.group(1)      #If Product Price Regex Search Fails,
+            msrp = float(productPrice.group(1).lstrip("$"))
+            msrp = msrp * 3
+            ws['L' + rowVal.__str__()] = msrp
+
+            wholesalePrice = msrp / 2
+            ws['M' + rowVal.__str__()] = wholesalePrice
         except AttributeError:
             try:
                 productPrice = re.search(r'TOTAL: (\$[0-9]+.[0-9]+)', tsContent)
                 ws['K' + rowVal.__str__()] = productPrice.group(1)
+                msrp = float(productPrice.group(1).lstrip("$"))
+                msrp = msrp * 3
+                ws['L' + rowVal.__str__()] = msrp
+
+                wholesalePrice = msrp / 2
+                ws['M' + rowVal.__str__()] = wholesalePrice
             except AttributeError:
-                ws['K' + rowVal.__str__()] = "--"
+                try:
+                    productPrice = re.search(r'TOTAL:\nW\n\n\$([0-9]*\.*[0-9]*)', tsContent)
+                    ws['K' + rowVal.__str__()] = productPrice.group(1)
+                    msrp = float(productPrice.group(1).lstrip("$"))
+                    msrp = msrp * 3
+                    ws['L' + rowVal.__str__()] = msrp
+                except AttributeError:
+                    ws['K' + rowVal.__str__()] = "--"
 
-    wholesalePrice = float(productPrice.group(1).lstrip("$"))
-    wholesalePrice = wholesalePrice * 3
-    ws['L' + rowVal.__str__()] = wholesalePrice
 
-    msrp = wholesalePrice / 2
-    ws['M' + rowVal.__str__()] = msrp
 
     rowVal += 1
 
     #--------------------------------------------------- Test Output ---------------------------------------------------
+    print(tsContent)
+    #print(productHeight)
+    #print(productDepth)
+    #print(productWidth)
+    #print(productDesc)
+    #print(cleanProductDesc)
+
     '''
     print(tsContent)
     print(lb)
